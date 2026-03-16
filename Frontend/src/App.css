@@ -1,0 +1,228 @@
+* {
+  margin: 0%;
+  padding: 0%;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+}
+
+/* Light mode variables */
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-code: #f6f8fa;
+  --text-primary: #000000;
+  --text-secondary: #343434;
+  --border-color: #e1e4e8;
+  --review-btn-bg: #4f46e5;
+  --review-btn-text: #ffffff;
+  --scrollbar-track: #f1f1f1;
+  --scrollbar-thumb: #c1c1c1;
+  --scrollbar-thumb-hover: #a8a8a8;
+  --code-editor-bg: #ffffff;
+}
+
+/* Dark mode variables */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #000000;
+    --bg-secondary: #343434;
+    --bg-code: #1a1a1a;
+    --text-primary: #ffffff;
+    --text-secondary: #e0e0e0;
+    --border-color: #333333;
+    --review-btn-bg: rgb(219, 219, 255);
+    --review-btn-text: #000000;
+    --scrollbar-track: #2d2d2d;
+    --scrollbar-thumb: #555555;
+    --scrollbar-thumb-hover: #777777;
+    --code-editor-bg: #000000;
+  }
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+main {
+  height: 100%;
+  width: 100%;
+  padding: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  overflow: hidden;
+  background-color: var(--bg-primary);
+}
+
+main .left,
+main .right {
+  height: 100%;
+  flex: 1;
+  border-radius: 0.7rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+}
+
+main .left {
+  position: relative;
+}
+
+.left .code-container {
+  height: 100%;
+  width: 100%;
+  border-radius: 0.7rem;
+  background-color: var(--code-editor-bg);
+  overflow: auto;
+  position: relative;
+}
+
+.code-editor-wrapper {
+  height: auto;
+  min-height: 100%;
+}
+
+main .left .review {
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  background-color: var(--review-btn-bg);
+  color: var(--review-btn-text);
+  padding: 0.5rem 2rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 0.7rem;
+  z-index: 10;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+main .left .review:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+main .left .review:active {
+  transform: translateY(0);
+}
+
+main .right {
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  overflow: auto;
+  display: block;
+  color: var(--text-secondary);
+  background-color: var(--bg-secondary);
+}
+
+/* Custom scrollbar */
+.left .code-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.left .code-container::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+.left .code-container::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+
+.left .code-container::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+.right::-webkit-scrollbar {
+  width: 8px;
+}
+
+.right::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+.right::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+
+.right::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* Code editor styling */
+.react-simple-code-editor textarea,
+.react-simple-code-editor pre {
+  background-color: var(--code-editor-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Markdown content styling */
+.right h1, .right h2, .right h3, .right h4, .right h5, .right h6 {
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.right p {
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.right code {
+  background-color: var(--bg-code);
+  color: var(--text-primary);
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+.right pre {
+  background-color: var(--bg-code) !important;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.right blockquote {
+  border-left: 4px solid var(--border-color);
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: var(--text-secondary);
+}
+
+.right ul, .right ol {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.right li {
+  margin-bottom: 0.5rem;
+}
+
+.right table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.right th, .right td {
+  border: 1px solid var(--border-color);
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.right th {
+  background-color: var(--bg-code);
+  font-weight: 600;
+}

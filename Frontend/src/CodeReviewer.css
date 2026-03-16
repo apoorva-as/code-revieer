@@ -1,0 +1,540 @@
+/* ============================================================
+   CODE REVIEWER — CodeReview AI
+   ============================================================ */
+
+.cr-app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #07070f;
+  color: #e2e8f0;
+  font-family: 'Inter', system-ui, sans-serif;
+  overflow: hidden;
+}
+
+/* ── Header ──────────────────────────────────────────── */
+.cr-header {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.25rem;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  background: rgba(7,7,15,0.96);
+  backdrop-filter: blur(12px);
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.cr-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.cr-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255,255,255,0.055);
+  border: 1px solid rgba(255,255,255,0.09);
+  color: #94a3b8;
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 0.36rem 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.cr-back-btn:hover {
+  background: rgba(255,255,255,0.09);
+  color: #e2e8f0;
+  border-color: rgba(255,255,255,0.16);
+}
+
+.cr-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  user-select: none;
+}
+
+.cr-logo-icon {
+  font-family: 'Fira Code', monospace;
+  font-weight: 700;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.cr-logo-ai {
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.cr-ai-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  padding: 0.3rem 0.8rem;
+  border: 1px solid rgba(99,102,241,0.3);
+  border-radius: 100px;
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: #818cf8;
+  background: rgba(99,102,241,0.08);
+}
+
+.cr-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 7px #4ade80;
+  animation: crPulse 2.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes crPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
+/* ── Body ────────────────────────────────────────────── */
+.cr-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ── Panels ──────────────────────────────────────────── */
+.cr-editor-panel,
+.cr-output-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.cr-editor-panel {
+  border-right: 1px solid rgba(255,255,255,0.07);
+}
+
+.cr-panel-header {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.25rem;
+  border-bottom: 1px solid rgba(255,255,255,0.055);
+  background: rgba(255,255,255,0.018);
+  flex-shrink: 0;
+}
+
+.cr-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.cr-lang-badge {
+  font-size: 0.7rem;
+  color: #4ade80;
+  background: rgba(74,222,128,0.08);
+  border: 1px solid rgba(74,222,128,0.2);
+  padding: 0.12rem 0.55rem;
+  border-radius: 4px;
+  font-family: 'Fira Code', monospace;
+  font-weight: 500;
+}
+
+/* ── Editor scroll area ──────────────────────────────── */
+.cr-editor-scroll {
+  flex: 1;
+  overflow: auto;
+  background: #080811;
+}
+
+.cr-editor-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+.cr-editor-scroll::-webkit-scrollbar-track { background: transparent; }
+.cr-editor-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+.cr-editor-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }
+
+/* Let prism theme show through properly */
+.cr-editor-textarea,
+.cr-editor-pre {
+  outline: none !important;
+}
+
+/* ── Editor footer ───────────────────────────────────── */
+.cr-editor-footer {
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.25rem;
+  border-top: 1px solid rgba(255,255,255,0.055);
+  background: rgba(255,255,255,0.018);
+  flex-shrink: 0;
+}
+
+.cr-line-count {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.73rem;
+  color: #3d4f63;
+  font-family: 'Fira Code', monospace;
+}
+
+.cr-review-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  border: none;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 700;
+  padding: 0.58rem 1.6rem;
+  border-radius: 9px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.25s;
+  box-shadow: 0 2px 14px rgba(99,102,241,0.35);
+}
+
+.cr-review-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 22px rgba(99,102,241,0.55);
+}
+
+.cr-review-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.cr-btn-loading {
+  opacity: 0.75;
+}
+
+.cr-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2.5px solid rgba(255,255,255,0.28);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: crSpin 0.65s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes crSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Output panel ────────────────────────────────────── */
+.cr-output-scroll {
+  flex: 1;
+  overflow: auto;
+  background: #07070e;
+  position: relative;
+}
+
+.cr-output-scroll::-webkit-scrollbar { width: 5px; }
+.cr-output-scroll::-webkit-scrollbar-track { background: transparent; }
+.cr-output-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+.cr-output-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }
+
+/* Copy button */
+.cr-copy-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #4b5563;
+  font-size: 0.73rem;
+  font-weight: 500;
+  padding: 0.22rem 0.65rem;
+  border-radius: 5px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.cr-copy-btn:hover {
+  background: rgba(255,255,255,0.08);
+  color: #94a3b8;
+}
+
+.cr-copy-btn.cr-copied {
+  color: #4ade80;
+  border-color: rgba(74,222,128,0.25);
+  background: rgba(74,222,128,0.06);
+}
+
+/* ── Placeholder ─────────────────────────────────────── */
+.cr-placeholder {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  padding: 3rem 2.5rem;
+  text-align: center;
+}
+
+.cr-placeholder-icon {
+  color: #1a2130;
+  margin-bottom: 0.4rem;
+}
+
+.cr-placeholder-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #2d3a4a;
+}
+
+.cr-placeholder-sub {
+  font-size: 0.85rem;
+  color: #253040;
+  max-width: 300px;
+  line-height: 1.65;
+}
+
+.cr-placeholder-sub strong {
+  color: #364455;
+}
+
+/* ── Loading state ───────────────────────────────────── */
+.cr-loading-state {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.1rem;
+  padding: 3rem;
+}
+
+.cr-loading-ring {
+  position: relative;
+  width: 48px;
+  height: 48px;
+}
+
+.cr-loading-ring span {
+  display: block;
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  animation: crRingSpin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+
+.cr-loading-ring span:nth-child(1) {
+  border-top-color: #6366f1;
+  animation-delay: -0.45s;
+}
+
+.cr-loading-ring span:nth-child(2) {
+  border-top-color: #818cf8;
+  animation-delay: -0.3s;
+}
+
+.cr-loading-ring span:nth-child(3) {
+  border-top-color: #a855f7;
+  animation-delay: -0.15s;
+}
+
+.cr-loading-ring span:nth-child(4) {
+  border-top-color: #c084fc;
+}
+
+@keyframes crRingSpin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.cr-loading-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.cr-loading-sub {
+  font-size: 0.8rem;
+  color: #3a4a5c;
+  text-align: center;
+}
+
+/* ── Review Content (Markdown) ───────────────────────── */
+.cr-review-content {
+  padding: 1.75rem 2rem 2.5rem;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  line-height: 1.85;
+}
+
+.cr-review-content h1,
+.cr-review-content h2,
+.cr-review-content h3,
+.cr-review-content h4 {
+  color: #f1f5f9;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 1.75rem 0 0.75rem;
+}
+
+.cr-review-content h1 { font-size: 1.3rem; }
+.cr-review-content h2 { font-size: 1.1rem; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 0.5rem; }
+.cr-review-content h3 { font-size: 0.975rem; }
+.cr-review-content h4 { font-size: 0.9rem; color: #cbd5e1; }
+
+.cr-review-content h1:first-child,
+.cr-review-content h2:first-child,
+.cr-review-content h3:first-child { margin-top: 0; }
+
+.cr-review-content p {
+  margin-bottom: 0.9rem;
+}
+
+.cr-review-content ul,
+.cr-review-content ol {
+  margin: 0.75rem 0 0.9rem;
+  padding-left: 1.4rem;
+}
+
+.cr-review-content li {
+  margin-bottom: 0.45rem;
+}
+
+.cr-review-content li::marker {
+  color: #4b5563;
+}
+
+.cr-review-content strong {
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.cr-review-content em {
+  color: #a5b4fc;
+}
+
+.cr-review-content a {
+  color: #818cf8;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Inline code */
+.cr-review-content :not(pre) > code {
+  background: rgba(99,102,241,0.1);
+  border: 1px solid rgba(99,102,241,0.16);
+  color: #a5b4fc;
+  padding: 0.14rem 0.44rem;
+  border-radius: 5px;
+  font-size: 0.85em;
+  font-family: 'Fira Code', monospace;
+}
+
+/* Code blocks */
+.cr-review-content pre {
+  background: #0c0c1a !important;
+  border: 1px solid rgba(255,255,255,0.07) !important;
+  border-radius: 11px !important;
+  padding: 1.25rem !important;
+  overflow-x: auto;
+  margin: 1.1rem 0;
+}
+
+.cr-review-content pre code {
+  background: none !important;
+  border: none !important;
+  color: inherit !important;
+  padding: 0 !important;
+  font-size: 0.82rem;
+  font-family: 'Fira Code', monospace;
+}
+
+/* Blockquote */
+.cr-review-content blockquote {
+  border-left: 3px solid #6366f1;
+  background: rgba(99,102,241,0.05);
+  padding: 0.8rem 1.1rem;
+  margin: 1rem 0;
+  border-radius: 0 9px 9px 0;
+  color: #94a3b8;
+}
+
+.cr-review-content blockquote p {
+  margin: 0;
+}
+
+.cr-review-content hr {
+  border: none;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  margin: 1.75rem 0;
+}
+
+/* Table */
+.cr-review-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.85rem;
+}
+
+.cr-review-content th,
+.cr-review-content td {
+  padding: 0.6rem 0.9rem;
+  border: 1px solid rgba(255,255,255,0.07);
+  text-align: left;
+}
+
+.cr-review-content th {
+  background: rgba(99,102,241,0.08);
+  color: #cbd5e1;
+  font-weight: 600;
+}
+
+.cr-review-content tr:hover td {
+  background: rgba(255,255,255,0.02);
+}
+
+/* ── Responsive ──────────────────────────────────────── */
+@media (max-width: 768px) {
+  .cr-body {
+    flex-direction: column;
+  }
+
+  .cr-editor-panel {
+    border-right: none;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    flex: none;
+    height: 50%;
+  }
+
+  .cr-output-panel {
+    flex: none;
+    height: 50%;
+  }
+}
