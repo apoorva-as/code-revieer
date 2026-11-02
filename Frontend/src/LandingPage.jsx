@@ -1,14 +1,310 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import prism from 'prismjs'
+import Icon from './components/Icon'
+import Logo from './components/Logo'
 import './LandingPage.css'
+
+const NAV_LINKS = [
+  { id: 'features', label: 'Features' },
+  { id: 'how-it-works', label: 'How It Works' },
+  { id: 'use-cases', label: 'Use Cases' },
+  { id: 'reviews', label: 'Reviews' },
+  { id: 'contact', label: 'Contact' },
+]
+
+const LANGUAGES = ['JavaScript', 'TypeScript', 'Python', 'Java', 'C++', 'Go', 'Rust', 'PHP', 'Ruby', 'C#']
+
+const PREVIEW_CODE = `import { db } from './db'
+
+export async function fetchUser(id) {
+  const query = "SELECT * FROM users WHERE id = " + id
+  const user = await db.execute(query)
+
+  // TODO: handle missing user
+  return user.rows[0]
+}`
+
+const PREVIEW_LINES = prism
+  .highlight(PREVIEW_CODE, prism.languages.javascript, 'javascript')
+  .split('\n')
+
+const FEATURES = [
+  {
+    icon: 'shield',
+    title: 'Security Analysis',
+    desc: 'Detect SQL injection, XSS, CSRF and the OWASP Top 10 before they reach production.',
+  },
+  {
+    icon: 'zap',
+    title: 'Performance Tips',
+    desc: 'Actionable suggestions to reduce time complexity, memory usage and needless bottlenecks.',
+  },
+  {
+    icon: 'layers',
+    title: 'Clean Code Guide',
+    desc: 'SOLID principles, naming conventions and the practices senior engineers rely on.',
+  },
+  {
+    icon: 'code',
+    title: 'Multi-Language',
+    desc: 'JavaScript, TypeScript, Python, Java, C++, Go, Rust, PHP, Ruby and many more.',
+  },
+  {
+    icon: 'bug',
+    title: 'Bug Detection',
+    desc: 'Spot logic errors, unhandled promises and edge cases that slip past a quick read.',
+  },
+  {
+    icon: 'wrench',
+    title: 'Ready-to-use Fixes',
+    desc: 'Every issue comes with a refactored snippet you can copy straight into your codebase.',
+  },
+]
+
+const STEPS = [
+  {
+    icon: 'clipboard',
+    title: 'Paste your code',
+    desc: 'Drop any snippet into the editor. Syntax highlighting for every major language.',
+  },
+  {
+    icon: 'cpu',
+    title: 'AI analyzes it',
+    desc: 'The model inspects bugs, security, performance and clean-code violations in seconds.',
+  },
+  {
+    icon: 'fileCheck',
+    title: 'Get detailed feedback',
+    desc: 'A structured review with severity, explanations and corrected code examples.',
+  },
+]
+
+const BENEFITS = [
+  { title: 'Ship with confidence', desc: 'Catch issues before review, not after the incident.' },
+  { title: 'Learn as you code', desc: 'Every finding explains why — not just what to change.' },
+  { title: 'Faster pull requests', desc: 'Arrive at review with the obvious problems already fixed.' },
+  { title: 'No setup, no signup', desc: 'Open the workspace and start reviewing immediately.' },
+]
+
+const USE_CASES = [
+  { icon: 'user', title: 'Solo developers', desc: 'A second pair of senior eyes on side projects and freelance work.' },
+  { icon: 'gitPull', title: 'Pre-PR checks', desc: 'Clean up a diff before teammates spend time reviewing it.' },
+  { icon: 'book', title: 'Students & learners', desc: 'Understand best practices with explanations, not just fixes.' },
+  { icon: 'briefcase', title: 'Interview prep', desc: 'Pressure-test solutions for correctness, edge cases and style.' },
+]
+
+const TESTIMONIALS = [
+  {
+    text:
+      'CodeReview AI caught a critical SQL injection vulnerability in my code that I had completely missed. The explanations are clear, the suggestions are actionable, and it even provides corrected code snippets. This tool is now an essential part of my development workflow.',
+    initials: 'AK',
+    name: 'Alex Kumar',
+    role: 'Senior Full-Stack Developer',
+  },
+  {
+    text:
+      "As a bootcamp instructor, I recommend this tool to every single one of my students. It gives the kind of detailed, honest feedback a senior developer would give — immediate, educational, and precise. The 'try without signup' feature is perfect for quick classroom demos.",
+    initials: 'SP',
+    name: 'Sarah Parker',
+    role: 'Programming Instructor & Tech Lead',
+  },
+]
+
+const CONTACTS = [
+  { icon: 'mail', label: 'Email', value: 'support@codereviewai.dev' },
+  { icon: 'github', label: 'GitHub', value: 'github.com/codereviewai' },
+  { icon: 'linkedin', label: 'LinkedIn', value: 'linkedin.com/company/codereviewai' },
+  { icon: 'twitter', label: 'Twitter / X', value: '@codereviewai' },
+]
+
+function SectionHeader({ tag, title, subtitle, align = 'center' }) {
+  return (
+    <div className={`section-header section-header-${align}`}>
+      <span className="section-tag">{tag}</span>
+      <h2 className="section-title">{title}</h2>
+      {subtitle && <p className="section-subtitle">{subtitle}</p>}
+    </div>
+  )
+}
+
+function EditorPreview() {
+  return (
+    <div className="preview" aria-label="Example AI code review" role="img">
+      <div className="preview-chrome">
+        <div className="preview-dots" aria-hidden="true">
+          <span /><span /><span />
+        </div>
+        <div className="preview-tab">
+          <Icon name="file" size={13} />
+          user.service.js
+        </div>
+        <div className="preview-chrome-right">
+          <span className="preview-pill"><span className="status-dot" /> Review complete</span>
+        </div>
+      </div>
+
+      <div className="preview-body">
+        <div className="preview-code">
+          {PREVIEW_LINES.map((line, i) => (
+            <div key={i} className={`preview-line ${i === 3 ? 'is-flagged' : ''} ${i === 4 ? 'is-warn' : ''}`}>
+              <span className="preview-ln">{i + 1}</span>
+              <code dangerouslySetInnerHTML={{ __html: line || ' ' }} />
+            </div>
+          ))}
+          <div className="preview-inline-hint">
+            <Icon name="alertCircle" size={13} />
+            Line 4 · User input concatenated into SQL query
+          </div>
+        </div>
+
+        <aside className="preview-review">
+          <div className="preview-review-head">
+            <span>AI Review</span>
+            <span className="preview-count">3 findings</span>
+          </div>
+
+          <div className="pv-card sev-critical">
+            <div className="pv-card-top">
+              <span className="sev-badge">Critical</span>
+              <span className="pv-loc">L4</span>
+            </div>
+            <p className="pv-title">SQL injection risk</p>
+            <p className="pv-desc">Use a parameterized query instead of string concatenation.</p>
+            <pre className="pv-snippet"><code><span className="token keyword">await</span> db.<span className="token function">execute</span>(<span className="token string">"… WHERE id = $1"</span>, [id])</code></pre>
+          </div>
+
+          <div className="pv-card sev-warning">
+            <div className="pv-card-top">
+              <span className="sev-badge">Warning</span>
+              <span className="pv-loc">L5</span>
+            </div>
+            <p className="pv-title">Unhandled rejection</p>
+            <p className="pv-desc">Wrap the query in try/catch and surface a typed error.</p>
+          </div>
+
+          <div className="pv-card sev-success">
+            <div className="pv-card-top">
+              <span className="sev-badge">Good</span>
+            </div>
+            <p className="pv-title">Clear, single-purpose function</p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  )
+}
+
+function AuthModal({ mode, onClose, onSwitch, onContinue }) {
+  const dialogRef = useRef(null)
+  const isLogin = mode === 'login'
+
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = (e) => e.key === 'Escape' && onClose()
+    document.addEventListener('keydown', onKey)
+    dialogRef.current?.querySelector('input')?.focus()
+    return () => {
+      document.body.style.overflow = prevOverflow
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [onClose, mode])
+
+  return (
+    <div
+      className="modal-overlay"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div
+        className="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="auth-title"
+        ref={dialogRef}
+      >
+        <button className="btn btn-ghost btn-icon btn-sm modal-close" onClick={onClose} aria-label="Close dialog">
+          <Icon name="close" size={16} />
+        </button>
+
+        <div className="modal-header">
+          <span className="logo-mark modal-mark" aria-hidden="true">&lt;/&gt;</span>
+          <h2 id="auth-title">{isLogin ? 'Welcome back' : 'Create your account'}</h2>
+          <p>{isLogin ? 'Sign in to your CodeReview AI account' : 'Join thousands of developers using CodeReview AI'}</p>
+        </div>
+
+        <form className="modal-form" onSubmit={(e) => e.preventDefault()}>
+          {!isLogin && (
+            <label className="field">
+              <span className="field-label">Full name</span>
+              <input className="input" type="text" placeholder="John Doe" autoComplete="name" />
+            </label>
+          )}
+          <label className="field">
+            <span className="field-label">Email</span>
+            <input className="input" type="email" placeholder="you@example.com" autoComplete="email" />
+          </label>
+          <label className="field">
+            <span className="field-label">Password</span>
+            <input
+              className="input"
+              type="password"
+              placeholder="••••••••"
+              autoComplete={isLogin ? 'current-password' : 'new-password'}
+            />
+          </label>
+          <button type="submit" className="btn btn-primary btn-lg btn-block">
+            {isLogin ? 'Sign in' : 'Create account'}
+          </button>
+        </form>
+
+        <p className="modal-switch">
+          {isLogin ? "Don't have an account?" : 'Already have an account?'}{' '}
+          <button onClick={() => onSwitch(isLogin ? 'signup' : 'login')}>
+            {isLogin ? 'Sign up' : 'Log in'}
+          </button>
+        </p>
+
+        <div className="modal-divider"><span>or</span></div>
+
+        <button className="btn btn-secondary btn-lg btn-block" onClick={onContinue}>
+          Continue without account
+          <Icon name="arrowRight" size={15} />
+        </button>
+      </div>
+    </div>
+  )
+}
 
 function LandingPage({ onTryNow }) {
   const [activeModal, setActiveModal] = useState(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return
+    const onKey = (e) => e.key === 'Escape' && setMobileMenuOpen(false)
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [mobileMenuOpen])
 
   const scrollTo = (id) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
     setMobileMenuOpen(false)
   }
+
+  const openModal = (mode) => {
+    setMobileMenuOpen(false)
+    setActiveModal(mode)
+  }
+
+  const closeModal = useCallback(() => setActiveModal(null), [])
 
   const openReviewer = () => {
     setActiveModal(null)
@@ -19,406 +315,303 @@ function LandingPage({ onTryNow }) {
     <div className="landing">
 
       {/* ── Navbar ── */}
-      <nav className="navbar">
-        <div className="nav-container">
-          <div className="nav-logo">
-            <span className="logo-icon">&lt;/&gt;</span>
-            <span className="logo-text">CodeReview<span className="logo-ai">AI</span></span>
-          </div>
-
-          <div className={`nav-links ${mobileMenuOpen ? 'open' : ''}`}>
-            <button onClick={() => scrollTo('features')} className="nav-link">Features</button>
-            <button onClick={() => scrollTo('how-it-works')} className="nav-link">How It Works</button>
-            <button onClick={() => scrollTo('reviews')} className="nav-link">Reviews</button>
-            <button onClick={() => scrollTo('contact')} className="nav-link">Contact</button>
-          </div>
-
-          <div className="nav-actions">
-            <button className="btn-ghost" onClick={() => setActiveModal('login')}>Login</button>
-            <button className="btn-primary" onClick={() => setActiveModal('signup')}>Sign Up</button>
-          </div>
-
-          <button
-            className={`hamburger ${mobileMenuOpen ? 'open' : ''}`}
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            <span /><span /><span />
+      <header className={`navbar ${scrolled ? 'is-scrolled' : ''} ${mobileMenuOpen ? 'is-open' : ''}`}>
+        <nav className="nav-container" aria-label="Primary">
+          <button className="nav-brand" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="CodeReviewAI home">
+            <Logo />
           </button>
-        </div>
-      </nav>
 
-      {/* ── Hero ── */}
-      <section className="hero">
-        <div className="hero-bg">
-          <div className="hero-blob blob-1" />
-          <div className="hero-blob blob-2" />
-          <div className="hero-grid" />
-        </div>
-
-        <div className="hero-container">
-          <div className="hero-content">
-            <div className="hero-badge">
-              <span className="badge-dot" />
-              AI-Powered &middot; Free to Use &middot; Instant Results
-            </div>
-
-            <h1 className="hero-title">
-              Elevate Your<br />
-              <span className="gradient-text">Code Quality</span><br />
-              with AI
-            </h1>
-
-            <p className="hero-subtitle">
-              Get instant, intelligent code reviews powered by advanced AI.
-              Catch bugs, improve performance, and write better code —
-              no signup required.
-            </p>
-
-            <div className="hero-actions">
-              <button className="btn-cta" onClick={onTryNow}>
-                <span>Try It Free</span>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M5 12h14M12 5l7 7-7 7" />
-                </svg>
-              </button>
-              <button className="btn-secondary-cta" onClick={() => setActiveModal('signup')}>
-                Create Account
-              </button>
-            </div>
-
-            <p className="hero-note">No credit card required &middot; Works instantly</p>
-          </div>
-
-          <div className="hero-visual">
-            <div className="code-preview-card">
-              <div className="code-card-header">
-                <div className="code-card-dots">
-                  <span className="dot dot-red" />
-                  <span className="dot dot-yellow" />
-                  <span className="dot dot-green" />
-                </div>
-                <span className="code-card-title">main.js</span>
-              </div>
-              <pre className="code-preview-body"><code>{`function fetchUser(id) {
-  const user = db.query(
-    "SELECT * FROM users" +
-    " WHERE id = " + id
-  )
-  return user
-}`}</code></pre>
-              <div className="ai-review-bubble">
-                <div className="bubble-icon">⚠️</div>
-                <div className="bubble-text">
-                  <strong>SQL Injection Risk</strong>
-                  <p>Use parameterized queries instead of string concatenation to prevent injection attacks.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── How It Works ── */}
-      <section className="how-it-works" id="how-it-works">
-        <div className="section-container">
-          <div className="section-header">
-            <span className="section-tag">Simple Process</span>
-            <h2 className="section-title">How CodeReview AI Works</h2>
-            <p className="section-subtitle">Three simple steps to better, cleaner, and safer code</p>
-          </div>
-
-          <div className="steps-grid">
-            <div className="step-card">
-              <div className="step-number">01</div>
-              <div className="step-icon">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-                  <path d="M16 18l6-6-6-6M8 6l-6 6 6 6" />
-                </svg>
-              </div>
-              <h3>Paste Your Code</h3>
-              <p>Drop any code snippet into the editor — JavaScript, Python, Java, C++, Go, and more. Full syntax highlighting included.</p>
-            </div>
-
-            <div className="step-card featured">
-              <div className="step-number">02</div>
-              <div className="step-icon">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-                  <circle cx="12" cy="12" r="3" />
-                  <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M18.36 5.64l1.41-1.41" />
-                </svg>
-              </div>
-              <h3>AI Analyzes It</h3>
-              <p>Our advanced AI deeply analyzes your code for bugs, security vulnerabilities, performance issues, and clean code violations.</p>
-            </div>
-
-            <div className="step-card">
-              <div className="step-number">03</div>
-              <div className="step-icon">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3>Get Detailed Feedback</h3>
-              <p>Receive a comprehensive review with specific suggestions, corrected code examples, and best practices to apply right away.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Features ── */}
-      <section className="features" id="features">
-        <div className="section-container">
-          <div className="section-header">
-            <span className="section-tag">Features</span>
-            <h2 className="section-title">Everything You Need</h2>
-            <p className="section-subtitle">Powerful analysis tools built to help every developer write production-quality code</p>
-          </div>
-
-          <div className="features-grid">
-            {[
-              {
-                icon: '🔐',
-                title: 'Security Analysis',
-                desc: 'Detect SQL injections, XSS, CSRF, and all common OWASP Top 10 vulnerabilities before they reach production.',
-              },
-              {
-                icon: '⚡',
-                title: 'Performance Tips',
-                desc: 'Get actionable suggestions to reduce time complexity, memory usage, and remove unnecessary bottlenecks.',
-              },
-              {
-                icon: '🧹',
-                title: 'Clean Code Guide',
-                desc: 'Follow SOLID principles, naming conventions, and industry best practices recommended by top engineers.',
-              },
-              {
-                icon: '🌐',
-                title: 'Multi-Language',
-                desc: 'Supports JavaScript, TypeScript, Python, Java, C++, Go, Rust, PHP, Ruby, and many more languages.',
-              },
-            ].map((f, i) => (
-              <div className="feature-card" key={i}>
-                <div className="feature-icon">{f.icon}</div>
-                <h3>{f.title}</h3>
-                <p>{f.desc}</p>
-              </div>
+          <div className="nav-links">
+            {NAV_LINKS.map((l) => (
+              <button key={l.id} onClick={() => scrollTo(l.id)} className="nav-link">{l.label}</button>
             ))}
           </div>
 
-          <div className="cta-strip">
-            <p>Ready to write better code?</p>
-            <button className="btn-cta" onClick={onTryNow}>
-              <span>Try Without Signup</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M5 12h14M12 5l7 7-7 7" />
-              </svg>
+          <div className="nav-actions">
+            <button className="btn btn-ghost btn-sm" onClick={() => openModal('login')}>Log in</button>
+            <button className="btn btn-primary btn-sm" onClick={() => openModal('signup')}>Sign up</button>
+          </div>
+
+          <button
+            className="btn btn-ghost btn-icon nav-toggle"
+            onClick={() => setMobileMenuOpen((o) => !o)}
+            aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-menu"
+          >
+            <Icon name={mobileMenuOpen ? 'close' : 'menu'} size={18} />
+          </button>
+        </nav>
+
+        <div id="mobile-menu" className="mobile-menu" hidden={!mobileMenuOpen}>
+          {NAV_LINKS.map((l) => (
+            <button key={l.id} onClick={() => scrollTo(l.id)} className="mobile-link">
+              {l.label}
+              <Icon name="arrowRight" size={14} />
             </button>
+          ))}
+          <div className="mobile-actions">
+            <button className="btn btn-secondary btn-lg" onClick={() => openModal('login')}>Log in</button>
+            <button className="btn btn-primary btn-lg" onClick={() => openModal('signup')}>Sign up</button>
           </div>
         </div>
-      </section>
+      </header>
 
-      {/* ── Reviews ── */}
-      <section className="reviews" id="reviews">
-        <div className="section-container">
-          <div className="section-header">
-            <span className="section-tag">Testimonials</span>
-            <h2 className="section-title">Loved by Developers</h2>
-            <p className="section-subtitle">See what real developers are saying about CodeReview AI</p>
+      <main>
+        {/* ── Hero ── */}
+        <section className="hero">
+          <div className="hero-bg" aria-hidden="true">
+            <div className="hero-grid" />
+            <div className="hero-glow" />
           </div>
 
-          <div className="reviews-grid">
-            <div className="review-card">
-              <div className="review-stars">★★★★★</div>
-              <p className="review-text">
-                "CodeReview AI caught a critical SQL injection vulnerability in my code that I had completely missed.
-                The explanations are clear, the suggestions are actionable, and it even provides corrected code snippets.
-                This tool is now an essential part of my development workflow."
-              </p>
-              <div className="review-author">
-                <div className="author-avatar">AK</div>
-                <div>
-                  <div className="author-name">Alex Kumar</div>
-                  <div className="author-role">Senior Full-Stack Developer</div>
-                </div>
-              </div>
+          <div className="container hero-inner">
+            <div className="hero-badge">
+              <span className="status-dot" />
+              AI-powered <span className="sep">·</span> Free to use <span className="sep">·</span> Instant results
             </div>
 
-            <div className="review-card">
-              <div className="review-stars">★★★★★</div>
-              <p className="review-text">
-                "As a bootcamp instructor, I recommend this tool to every single one of my students.
-                It gives the kind of detailed, honest feedback a senior developer would give — immediate, educational, and precise.
-                The 'try without signup' feature is perfect for quick classroom demos."
-              </p>
-              <div className="review-author">
-                <div className="author-avatar">SP</div>
-                <div>
-                  <div className="author-name">Sarah Parker</div>
-                  <div className="author-role">Programming Instructor &amp; Tech Lead</div>
-                </div>
+            <h1 className="hero-title">
+              Elevate your code quality
+              <span className="hero-title-muted"> with an AI reviewer.</span>
+            </h1>
+
+            <p className="hero-subtitle">
+              Instant, senior-level code reviews. Catch bugs, close security holes and
+              improve performance before you ship — no signup required.
+            </p>
+
+            <div className="hero-actions">
+              <button className="btn btn-primary btn-lg" onClick={onTryNow}>
+                Try it free
+                <Icon name="arrowRight" size={16} />
+              </button>
+              <button className="btn btn-secondary btn-lg" onClick={() => openModal('signup')}>
+                Create account
+              </button>
+            </div>
+
+            <p className="hero-note">
+              <Icon name="check" size={14} /> No credit card required
+              <span className="sep">·</span>
+              <Icon name="check" size={14} /> Works instantly
+            </p>
+
+            <div className="hero-visual">
+              <EditorPreview />
+            </div>
+          </div>
+        </section>
+
+        {/* ── Language strip ── */}
+        <section className="lang-strip" aria-label="Supported languages">
+          <div className="container lang-strip-inner">
+            <span className="lang-strip-label">Reviews code in</span>
+            <ul className="lang-list">
+              {LANGUAGES.map((l) => <li key={l}>{l}</li>)}
+              <li className="lang-more">+ more</li>
+            </ul>
+          </div>
+        </section>
+
+        {/* ── Features ── */}
+        <section className="section" id="features">
+          <div className="container">
+            <SectionHeader
+              tag="Features"
+              title="Everything you need in a reviewer"
+              subtitle="Powerful analysis built to help every developer write production-quality code."
+            />
+            <div className="features-grid">
+              {FEATURES.map((f) => (
+                <article className="feature-card" key={f.title}>
+                  <div className="icon-tile"><Icon name={f.icon} size={18} /></div>
+                  <h3>{f.title}</h3>
+                  <p>{f.desc}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── How It Works ── */}
+        <section className="section section-alt" id="how-it-works">
+          <div className="container">
+            <SectionHeader
+              tag="How it works"
+              title="From snippet to review in three steps"
+              subtitle="Better, cleaner and safer code without changing your workflow."
+            />
+            <ol className="steps">
+              {STEPS.map((s, i) => (
+                <li className="step" key={s.title}>
+                  <div className="step-head">
+                    <div className="icon-tile icon-tile-lg"><Icon name={s.icon} size={20} /></div>
+                    <span className="step-num">0{i + 1}</span>
+                  </div>
+                  <h3>{s.title}</h3>
+                  <p>{s.desc}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        {/* ── Benefits & Use cases ── */}
+        <section className="section" id="use-cases">
+          <div className="container benefits-layout">
+            <div className="benefits-col">
+              <SectionHeader
+                align="left"
+                tag="Why CodeReviewAI"
+                title="Built for the way developers actually work"
+                subtitle="Fast enough for a quick sanity check, thorough enough to trust before a merge."
+              />
+              <ul className="benefit-list">
+                {BENEFITS.map((b) => (
+                  <li key={b.title}>
+                    <span className="benefit-check"><Icon name="check" size={13} strokeWidth={2.5} /></span>
+                    <div>
+                      <strong>{b.title}</strong>
+                      <span>{b.desc}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <button className="btn btn-primary btn-lg" onClick={onTryNow}>
+                Open the workspace
+                <Icon name="arrowRight" size={16} />
+              </button>
+            </div>
+
+            <div className="usecase-grid">
+              {USE_CASES.map((u) => (
+                <article className="usecase-card" key={u.title}>
+                  <div className="icon-tile"><Icon name={u.icon} size={18} /></div>
+                  <h3>{u.title}</h3>
+                  <p>{u.desc}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── Reviews ── */}
+        <section className="section section-alt" id="reviews">
+          <div className="container">
+            <SectionHeader
+              tag="Testimonials"
+              title="Loved by developers"
+              subtitle="What developers are saying about CodeReview AI."
+            />
+            <div className="reviews-grid">
+              {TESTIMONIALS.map((t) => (
+                <figure className="review-card" key={t.name}>
+                  <div className="review-stars" aria-label="5 out of 5 stars">
+                    {Array.from({ length: 5 }).map((_, i) => <Icon key={i} name="star" size={14} filled strokeWidth={0} />)}
+                  </div>
+                  <blockquote className="review-text">“{t.text}”</blockquote>
+                  <figcaption className="review-author">
+                    <span className="author-avatar">{t.initials}</span>
+                    <span>
+                      <span className="author-name">{t.name}</span>
+                      <span className="author-role">{t.role}</span>
+                    </span>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── CTA ── */}
+        <section className="section cta-section">
+          <div className="container">
+            <div className="cta-panel">
+              <div>
+                <h2>Ready to write better code?</h2>
+                <p>Paste a snippet and get a structured review in seconds.</p>
+              </div>
+              <div className="cta-actions">
+                <button className="btn btn-primary btn-lg" onClick={onTryNow}>
+                  Try without signup
+                  <Icon name="arrowRight" size={16} />
+                </button>
+                <button className="btn btn-secondary btn-lg" onClick={() => openModal('signup')}>
+                  Create account
+                </button>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ── Contact ── */}
-      <section className="contact" id="contact">
-        <div className="section-container">
-          <div className="section-header">
-            <span className="section-tag">Get In Touch</span>
-            <h2 className="section-title">Contact Us</h2>
-            <p className="section-subtitle">Have questions, feedback, or just want to say hi? We'd love to hear from you.</p>
-          </div>
-
-          <div className="contact-grid">
-            <div className="contact-info">
-              <div className="contact-item">
-                <div className="contact-icon">
-                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                    <polyline points="22,6 12,13 2,6" />
-                  </svg>
+        {/* ── Contact ── */}
+        <section className="section" id="contact">
+          <div className="container">
+            <SectionHeader
+              tag="Get in touch"
+              title="Contact us"
+              subtitle="Questions, feedback, or just want to say hi? We'd love to hear from you."
+            />
+            <div className="contact-grid">
+              {CONTACTS.map((c) => (
+                <div className="contact-card" key={c.label}>
+                  <div className="icon-tile"><Icon name={c.icon} size={17} /></div>
+                  <div className="contact-text">
+                    <span className="contact-label">{c.label}</span>
+                    <span className="contact-value">{c.value}</span>
+                  </div>
                 </div>
-                <div>
-                  <div className="contact-label">Email</div>
-                  <div className="contact-value">support@codereviewai.dev</div>
-                </div>
-              </div>
-
-              <div className="contact-item">
-                <div className="contact-icon">
-                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="contact-label">GitHub</div>
-                  <div className="contact-value">github.com/codereviewai</div>
-                </div>
-              </div>
-
-              <div className="contact-item">
-                <div className="contact-icon">
-                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
-                    <rect x="2" y="9" width="4" height="12" />
-                    <circle cx="4" cy="4" r="2" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="contact-label">LinkedIn</div>
-                  <div className="contact-value">linkedin.com/company/codereviewai</div>
-                </div>
-              </div>
-
-              <div className="contact-item">
-                <div className="contact-icon">
-                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="contact-label">Twitter / X</div>
-                  <div className="contact-value">@codereviewai</div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
       {/* ── Footer ── */}
       <footer className="footer">
-        <div className="footer-container">
-          <div className="footer-logo">
-            <span className="logo-icon">&lt;/&gt;</span>
-            <span className="logo-text">CodeReview<span className="logo-ai">AI</span></span>
+        <div className="container footer-top">
+          <div className="footer-brand">
+            <Logo />
+            <p>AI-powered code reviews for developers who care about quality, security and performance.</p>
           </div>
-          <p>© 2026 CodeReview AI. Built with ❤️ for developers.</p>
-          <div className="footer-links">
-            <button onClick={() => scrollTo('how-it-works')}>How It Works</button>
-            <button onClick={() => scrollTo('reviews')}>Reviews</button>
-            <button onClick={() => scrollTo('contact')}>Contact</button>
+
+          <div className="footer-cols">
+            <div className="footer-col">
+              <h4>Product</h4>
+              <button onClick={() => scrollTo('features')}>Features</button>
+              <button onClick={() => scrollTo('how-it-works')}>How It Works</button>
+              <button onClick={() => scrollTo('use-cases')}>Use Cases</button>
+              <button onClick={onTryNow}>Open Workspace</button>
+            </div>
+            <div className="footer-col">
+              <h4>Company</h4>
+              <button onClick={() => scrollTo('reviews')}>Reviews</button>
+              <button onClick={() => scrollTo('contact')}>Contact</button>
+            </div>
+            <div className="footer-col">
+              <h4>Account</h4>
+              <button onClick={() => openModal('login')}>Log in</button>
+              <button onClick={() => openModal('signup')}>Sign up</button>
+            </div>
           </div>
+        </div>
+
+        <div className="container footer-bottom">
+          <p>© 2026 CodeReview AI. Built for developers.</p>
+          <button className="footer-top-link" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            Back to top
+          </button>
         </div>
       </footer>
 
-      {/* ── Auth Modals ── */}
       {activeModal && (
-        <div
-          className="modal-overlay"
-          onClick={(e) => e.target === e.currentTarget && setActiveModal(null)}
-        >
-          <div className="modal">
-            <button className="modal-close" onClick={() => setActiveModal(null)}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M18 6L6 18M6 6l12 12" />
-              </svg>
-            </button>
-
-            {activeModal === 'login' ? (
-              <>
-                <div className="modal-header">
-                  <div className="modal-logo">&lt;/&gt;</div>
-                  <h2>Welcome Back</h2>
-                  <p>Sign in to your CodeReview AI account</p>
-                </div>
-                <form className="modal-form" onSubmit={e => e.preventDefault()}>
-                  <div className="form-group">
-                    <label>Email</label>
-                    <input type="email" placeholder="you@example.com" />
-                  </div>
-                  <div className="form-group">
-                    <label>Password</label>
-                    <input type="password" placeholder="••••••••" />
-                  </div>
-                  <button type="submit" className="btn-form-primary">Sign In</button>
-                </form>
-                <p className="modal-switch">
-                  Don't have an account?{' '}
-                  <button onClick={() => setActiveModal('signup')}>Sign Up</button>
-                </p>
-                <div className="modal-divider"><span>or</span></div>
-                <button className="btn-form-secondary" onClick={openReviewer}>
-                  Continue without account →
-                </button>
-              </>
-            ) : (
-              <>
-                <div className="modal-header">
-                  <div className="modal-logo">&lt;/&gt;</div>
-                  <h2>Create Account</h2>
-                  <p>Join thousands of developers using CodeReview AI</p>
-                </div>
-                <form className="modal-form" onSubmit={e => e.preventDefault()}>
-                  <div className="form-group">
-                    <label>Full Name</label>
-                    <input type="text" placeholder="John Doe" />
-                  </div>
-                  <div className="form-group">
-                    <label>Email</label>
-                    <input type="email" placeholder="you@example.com" />
-                  </div>
-                  <div className="form-group">
-                    <label>Password</label>
-                    <input type="password" placeholder="••••••••" />
-                  </div>
-                  <button type="submit" className="btn-form-primary">Create Account</button>
-                </form>
-                <p className="modal-switch">
-                  Already have an account?{' '}
-                  <button onClick={() => setActiveModal('login')}>Login</button>
-                </p>
-                <div className="modal-divider"><span>or</span></div>
-                <button className="btn-form-secondary" onClick={openReviewer}>
-                  Continue without account →
-                </button>
-              </>
-            )}
-          </div>
-        </div>
+        <AuthModal
+          mode={activeModal}
+          onClose={closeModal}
+          onSwitch={setActiveModal}
+          onContinue={openReviewer}
+        />
       )}
     </div>
   )

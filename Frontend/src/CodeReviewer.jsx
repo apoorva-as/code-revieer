@@ -1,12 +1,27 @@
-import { useState } from 'react'
-import "prismjs/themes/prism-tomorrow.css"
+import { useMemo, useRef, useState } from 'react'
 import Editor from "react-simple-code-editor"
 import axios from 'axios'
 import Markdown from "react-markdown"
 import rehypeHighlight from "rehype-highlight"
-import "highlight.js/styles/github-dark.css"
 import prism from "prismjs"
+import "prismjs/components/prism-typescript"
+import "prismjs/components/prism-python"
+import "prismjs/components/prism-java"
+import "prismjs/components/prism-c"
+import "prismjs/components/prism-cpp"
+import "prismjs/components/prism-csharp"
+import "prismjs/components/prism-go"
+import "prismjs/components/prism-rust"
+import "prismjs/components/prism-markup-templating"
+import "prismjs/components/prism-php"
+import "prismjs/components/prism-ruby"
+import "prismjs/components/prism-sql"
+import Icon from './components/Icon'
+import Logo from './components/Logo'
+import { parseReview, countBySeverity, SEVERITY_LABEL } from './reviewParser'
 import './CodeReviewer.css'
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
 const DEFAULT_CODE = `function fetchUser(id) {
   // TODO: fix this later
@@ -14,40 +29,160 @@ const DEFAULT_CODE = `function fetchUser(id) {
   return db.execute(query)
 }`
 
+// Language only drives editor highlighting + file name; the API payload is unchanged.
+const LANGUAGES = [
+  { id: 'javascript', label: 'JavaScript', ext: 'js' },
+  { id: 'typescript', label: 'TypeScript', ext: 'ts' },
+  { id: 'python', label: 'Python', ext: 'py' },
+  { id: 'java', label: 'Java', ext: 'java' },
+  { id: 'cpp', label: 'C++', ext: 'cpp' },
+  { id: 'c', label: 'C', ext: 'c' },
+  { id: 'csharp', label: 'C#', ext: 'cs' },
+  { id: 'go', label: 'Go', ext: 'go' },
+  { id: 'rust', label: 'Rust', ext: 'rs' },
+  { id: 'php', label: 'PHP', ext: 'php' },
+  { id: 'ruby', label: 'Ruby', ext: 'rb' },
+  { id: 'sql', label: 'SQL', ext: 'sql' },
+]
+
+const CHECKS = [
+  { icon: 'bug', label: 'Bugs & logic errors' },
+  { icon: 'shield', label: 'Security vulnerabilities' },
+  { icon: 'zap', label: 'Performance' },
+  { icon: 'layers', label: 'Readability & best practices' },
+]
+
+const SEVERITY_ICON = {
+  critical: 'xCircle',
+  warning: 'alert',
+  success: 'checkCircle',
+  info: 'info',
+}
+
+const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)
+
+function hastText(node) {
+  if (!node) return ''
+  if (node.type === 'text') return node.value
+  return (node.children || []).map(hastText).join('')
+}
+
+function useCopy(timeout = 2000) {
+  const [copied, setCopied] = useState(false)
+  const copy = (text) => {
+    if (!text) return
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), timeout)
+    })
+  }
+  return [copied, copy]
+}
+
+function CodeBlock({ node, children }) {
+  const [copied, copy] = useCopy()
+  const codeEl = node?.children?.find((c) => c.tagName === 'code')
+  const cls = codeEl?.properties?.className || []
+  const lang = cls.find((c) => String(c).startsWith('language-'))?.slice(9)
+
+  return (
+    <div className="cr-codeblock">
+      <div className="cr-codeblock-bar">
+        <span>{lang || 'code'}</span>
+        <button
+          className={`cr-codeblock-copy ${copied ? 'is-copied' : ''}`}
+          onClick={() => copy(hastText(codeEl))}
+          aria-label="Copy code snippet"
+        >
+          <Icon name={copied ? 'check' : 'copy'} size={12} />
+          {copied ? 'Copied' : 'Copy'}
+        </button>
+      </div>
+      <pre>{children}</pre>
+    </div>
+  )
+}
+
+const MD_COMPONENTS = { pre: CodeBlock }
+
+function ReviewCard({ section, index }) {
+  return (
+    <article
+      className={`cr-card sev-${section.severity}`}
+      style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
+    >
+      <header className="cr-card-head">
+        <span className="cr-card-icon"><Icon name={SEVERITY_ICON[section.severity]} size={15} /></span>
+        <h3 className="cr-card-title">{section.title}</h3>
+        <span className="sev-badge">{SEVERITY_LABEL[section.severity]}</span>
+      </header>
+      {section.body && (
+        <div className="cr-card-body cr-md">
+          <Markdown rehypePlugins={[rehypeHighlight]} components={MD_COMPONENTS}>
+            {section.body}
+          </Markdown>
+        </div>
+      )}
+    </article>
+  )
+}
+
 function CodeReviewer({ onBack }) {
   const [code, setCode] = useState(DEFAULT_CODE)
+  const [language, setLanguage] = useState('javascript')
   const [review, setReview] = useState('')
+  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [hasReviewed, setHasReviewed] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const [copied, copy] = useCopy()
+  const outputRef = useRef(null)
+
+  const lang = LANGUAGES.find((l) => l.id === language) || LANGUAGES[0]
+  const lines = code.split('\n')
+  const lineCount = lines.length
+
+  const sections = useMemo(() => parseReview(review), [review])
+  const counts = useMemo(() => countBySeverity(sections), [sections])
 
   async function reviewCode() {
     if (!code.trim() || loading) return
     setLoading(true)
     setReview('')
+    setError('')
     setHasReviewed(true)
+
+    // On stacked (mobile) layouts, bring the result panel into view.
+    if (window.matchMedia('(max-width: 860px)').matches) {
+      requestAnimationFrame(() => outputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+    }
+
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/ai/get-review`, { code })
+      const response = await axios.post(`${API_BASE_URL}/ai/get-review`, { code })
       setReview(response.data)
-    } catch (error) {
-      console.error('Error reviewing code:', error)
-      setReview(
-        '**Connection Error**\n\nCould not reach the review service. Please make sure the backend server is running on port 3000 and try again.'
+    } catch (err) {
+      console.error('Error reviewing code:', err)
+      setError(
+        `Could not reach the review service at ${API_BASE_URL}. If this is the deployed site, make sure Vercel has VITE_API_URL set to your Render backend URL and that the frontend was redeployed after saving the variable.`
       )
     } finally {
       setLoading(false)
     }
   }
 
-  function copyReview() {
-    if (!review) return
-    navigator.clipboard.writeText(review).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
+  function onEditorKeyDown(e) {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault()
+      reviewCode()
+    }
   }
 
-  const lineCount = code.split('\n').length
+  const highlight = (val) => {
+    const grammar = prism.languages[language] || prism.languages.javascript
+    return prism.highlight(val, grammar, language)
+  }
+
+  const showEmpty = !hasReviewed
+  const showResult = !loading && !error && review
 
   return (
     <div className="cr-app">
@@ -55,159 +190,214 @@ function CodeReviewer({ onBack }) {
       {/* ── Header ── */}
       <header className="cr-header">
         <div className="cr-header-left">
-          <button className="cr-back-btn" onClick={onBack}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M19 12H5M12 5l-7 7 7 7" />
-            </svg>
-            Back
+          <button className="btn btn-ghost btn-sm cr-back" onClick={onBack} aria-label="Back to home">
+            <Icon name="arrowLeft" size={15} />
+            <span className="cr-back-label">Back</span>
           </button>
-
-          <div className="cr-logo">
-            <span className="cr-logo-icon">&lt;/&gt;</span>
-            <span>CodeReview<span className="cr-logo-ai">AI</span></span>
-          </div>
+          <span className="cr-divider" aria-hidden="true" />
+          <Logo size="sm" />
+          <nav className="cr-crumbs" aria-label="Breadcrumb">
+            <span className="cr-crumb-sep">/</span>
+            <span>Workspace</span>
+            <span className="cr-crumb-sep">/</span>
+            <span className="cr-crumb-current">Review</span>
+          </nav>
         </div>
 
         <div className="cr-header-right">
-          <div className="cr-ai-badge">
-            <span className="cr-badge-dot" />
-            AI Powered
-          </div>
+          <span className="cr-ai-badge">
+            <span className={`status-dot ${loading ? 'is-busy' : ''}`} />
+            {loading ? 'Analyzing' : 'AI Powered'}
+          </span>
         </div>
       </header>
 
-      {/* ── Split Panel ── */}
-      <div className="cr-body">
+      {/* ── Workspace ── */}
+      <main className="cr-body">
 
-        {/* Left — Editor */}
-        <div className="cr-editor-panel">
-          <div className="cr-panel-header">
-            <div className="cr-panel-title">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                <path d="M16 18l6-6-6-6M8 6l-6 6 6 6" />
-              </svg>
-              Code Editor
+        {/* Editor */}
+        <section className="cr-panel cr-editor-panel" aria-label="Code editor">
+          <div className="cr-toolbar">
+            <div className="cr-file-tab">
+              <Icon name="file" size={13} />
+              <span>main.{lang.ext}</span>
             </div>
-            <div className="cr-lang-badge">JavaScript</div>
+
+            <div className="cr-toolbar-actions">
+              <label className="sr-only" htmlFor="cr-lang">Language</label>
+              <select
+                id="cr-lang"
+                className="select cr-lang-select"
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+              >
+                {LANGUAGES.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
+              </select>
+
+              <button
+                className="btn btn-ghost btn-sm btn-icon"
+                onClick={() => setCode('')}
+                disabled={!code || loading}
+                aria-label="Clear editor"
+                title="Clear editor"
+              >
+                <Icon name="trash" size={15} />
+              </button>
+
+              <button
+                className="btn btn-primary btn-sm cr-review-btn"
+                onClick={reviewCode}
+                disabled={loading || !code.trim()}
+              >
+                {loading ? <span className="spinner" /> : <Icon name="sparkles" size={15} />}
+                {loading ? 'Analyzing…' : 'Review Code'}
+              </button>
+            </div>
           </div>
 
-          <div className="cr-editor-scroll">
-            <Editor
-              value={code}
-              onValueChange={val => setCode(val)}
-              highlight={val => prism.highlight(val, prism.languages.javascript, 'javascript')}
-              padding={20}
-              style={{
-                fontFamily: '"Fira Code", "Fira Mono", monospace',
-                fontSize: '13.5px',
-                minHeight: '100%',
-                backgroundColor: 'transparent',
-                color: '#c9d5e3',
-              }}
-              textareaClassName="cr-editor-textarea"
-              preClassName="cr-editor-pre"
-            />
+          <div className="cr-editor-scroll" onKeyDown={onEditorKeyDown}>
+            <div className="cr-editor-inner">
+              <label className="sr-only" htmlFor="cr-code">Code to review</label>
+              <div className="cr-gutter" aria-hidden="true">
+                {lines.map((_, i) => <span key={i}>{i + 1}</span>)}
+              </div>
+              <Editor
+                value={code}
+                onValueChange={setCode}
+                highlight={highlight}
+                padding={16}
+                placeholder={`// Paste your ${lang.label} code here…`}
+                className="cr-editor"
+                textareaClassName="cr-editor-textarea"
+                preClassName="cr-editor-pre"
+                textareaId="cr-code"
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 13,
+                  lineHeight: '21px',
+                  minHeight: '100%',
+                }}
+              />
+            </div>
           </div>
 
-          <div className="cr-editor-footer">
-            <span className="cr-line-count">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="15" y2="18"/>
-              </svg>
-              {lineCount} {lineCount === 1 ? 'line' : 'lines'}
+          <footer className="cr-statusbar">
+            <span className="cr-status-item">
+              <Icon name="code" size={12} />
+              {lang.label}
             </span>
+            <span className="cr-status-item">{lineCount} {lineCount === 1 ? 'line' : 'lines'}</span>
+            <span className="cr-status-item cr-hide-sm">{code.length} chars</span>
+            <span className="cr-status-hint cr-hide-sm">
+              <kbd className="kbd">{isMac ? '⌘' : 'Ctrl'}</kbd>
+              <kbd className="kbd">Enter</kbd>
+              to review
+            </span>
+          </footer>
+        </section>
 
-            <button
-              className={`cr-review-btn ${loading ? 'cr-btn-loading' : ''}`}
-              onClick={reviewCode}
-              disabled={loading || !code.trim()}
-            >
-              {loading ? (
-                <>
-                  <span className="cr-spinner" />
-                  Analyzing…
-                </>
-              ) : (
-                <>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                    <circle cx="11" cy="11" r="8" />
-                    <path d="m21 21-4.35-4.35" />
-                  </svg>
-                  Review Code
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Right — Output */}
-        <div className="cr-output-panel">
-          <div className="cr-panel-header">
+        {/* Review */}
+        <section className="cr-panel cr-output-panel" aria-label="AI review" ref={outputRef}>
+          <div className="cr-toolbar">
             <div className="cr-panel-title">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <Icon name="checkCircle" size={14} />
               AI Review
             </div>
-            {review && !loading && (
-              <button className={`cr-copy-btn ${copied ? 'cr-copied' : ''}`} onClick={copyReview}>
-                {copied ? (
-                  <>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <path d="M20 6L9 17l-5-5" />
-                    </svg>
-                    Copied!
-                  </>
-                ) : (
-                  <>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="9" y="9" width="13" height="13" rx="2" />
-                      <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-                    </svg>
-                    Copy
-                  </>
-                )}
-              </button>
-            )}
+
+            <div className="cr-toolbar-actions">
+              {showResult && (
+                <button
+                  className={`btn btn-secondary btn-sm ${copied ? 'is-copied' : ''}`}
+                  onClick={() => copy(review)}
+                >
+                  <Icon name={copied ? 'check' : 'copy'} size={13} />
+                  {copied ? 'Copied!' : 'Copy'}
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="cr-output-scroll">
-            {!hasReviewed && (
-              <div className="cr-placeholder">
-                <div className="cr-placeholder-icon">
-                  <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
-                    <circle cx="11" cy="11" r="8" />
-                    <path d="m21 21-4.35-4.35" />
-                  </svg>
-                </div>
-                <p className="cr-placeholder-title">Ready to review</p>
-                <p className="cr-placeholder-sub">
-                  Paste your code on the left and click <strong>Review Code</strong> to get
-                  AI-powered feedback on bugs, security, and best practices.
+          <div className="cr-output-scroll" aria-live="polite" aria-busy={loading}>
+            {showEmpty && (
+              <div className="cr-state cr-empty">
+                <div className="cr-state-icon"><Icon name="search" size={24} strokeWidth={1.5} /></div>
+                <h2 className="cr-state-title">Ready to review</h2>
+                <p className="cr-state-sub">
+                  Paste your code in the editor and click <strong>Review Code</strong> to get
+                  AI-powered feedback on bugs, security and best practices.
                 </p>
+                <ul className="cr-checks">
+                  {CHECKS.map((c) => (
+                    <li key={c.label}>
+                      <Icon name={c.icon} size={14} />
+                      {c.label}
+                    </li>
+                  ))}
+                </ul>
+                <button className="btn btn-primary cr-empty-cta" onClick={reviewCode} disabled={!code.trim()}>
+                  <Icon name="sparkles" size={15} />
+                  Review sample code
+                </button>
               </div>
             )}
 
             {loading && (
-              <div className="cr-loading-state">
-                <div className="cr-loading-ring">
-                  <span /><span /><span /><span />
+              <div className="cr-loading">
+                <div className="cr-loading-head">
+                  <span className="spinner" />
+                  <div>
+                    <p className="cr-loading-title">Analyzing your code…</p>
+                    <p className="cr-loading-sub">Checking for bugs, security issues &amp; improvements</p>
+                  </div>
                 </div>
-                <p className="cr-loading-title">Analyzing your code…</p>
-                <p className="cr-loading-sub">Checking for bugs, security issues &amp; improvements</p>
+                {[0, 1, 2].map((i) => (
+                  <div className="cr-skeleton" key={i}>
+                    <div className="cr-sk-line w-30" />
+                    <div className="cr-sk-line w-90" />
+                    <div className="cr-sk-line w-70" />
+                    {i === 0 && <div className="cr-sk-block" />}
+                  </div>
+                ))}
               </div>
             )}
 
-            {!loading && review && (
-              <div className="cr-review-content">
-                <Markdown rehypePlugins={[rehypeHighlight]}>
-                  {review}
-                </Markdown>
+            {!loading && error && (
+              <div className="cr-state cr-error" role="alert">
+                <div className="cr-state-icon"><Icon name="alertCircle" size={24} strokeWidth={1.5} /></div>
+                <h2 className="cr-state-title">Connection error</h2>
+                <p className="cr-state-sub">{error}</p>
+                <button className="btn btn-secondary" onClick={reviewCode}>
+                  <Icon name="refresh" size={14} />
+                  Try again
+                </button>
+              </div>
+            )}
+
+            {showResult && (
+              <div className="cr-results">
+                <div className="cr-summary">
+                  <span className="cr-summary-label">
+                    <Icon name="checkCircle" size={14} />
+                    Review complete
+                  </span>
+                  <div className="cr-summary-chips">
+                    {['critical', 'warning', 'success', 'info'].map((s) =>
+                      counts[s] ? (
+                        <span key={s} className={`cr-chip sev-${s}`}>
+                          <span className="cr-chip-dot" />
+                          {counts[s]} {SEVERITY_LABEL[s]}
+                        </span>
+                      ) : null
+                    )}
+                  </div>
+                </div>
+
+                {sections.map((s, i) => <ReviewCard key={i} section={s} index={i} />)}
               </div>
             )}
           </div>
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   )
 }
